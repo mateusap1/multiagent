@@ -22,6 +22,89 @@ from pacman import GameState
 from typing import Tuple, List
 
 
+def ray_distance(
+    grid: List[List[bool]],
+    grid_width: int,
+    grid_height: int,
+    player_pos: Tuple[int, int],
+    max_breadth: int,
+) -> int:
+    for cur_breadth in range(max_breadth + 1):
+        if ray_trigger(grid, grid_width, grid_height, player_pos, cur_breadth):
+            return cur_breadth
+
+    return None
+
+
+def ray_trigger(
+    grid: List[List[bool]],
+    grid_width: int,
+    grid_height: int,
+    player_pos: Tuple[int, int],
+    breadth: int,
+) -> bool:
+    player_pos_x, player_pox_y = player_pos
+
+    if breadth == 0:
+        # print("Yuhai!")
+        # print("grid", grid)
+        # print("postions", player_pos_x, player_pox_y, grid[player_pos_x][player_pox_y])
+        # print("Yuhai!")
+        return grid[player_pos_x][player_pox_y]
+
+    initial_pos_x_start = max(player_pos[0] - breadth, 0)
+    initial_pos_x_end = min(player_pos[0] + breadth, grid_width - 1)
+
+    initial_pos_y_start = max(player_pos[1] - breadth, 0)
+    initial_pos_y_end = min(player_pos[1] + breadth, grid_height - 1)
+
+    # First let's check the edges
+
+    if grid[initial_pos_x_start][initial_pos_y_start]:
+        return True
+
+    if grid[initial_pos_x_start][initial_pos_y_end]:
+        return True
+
+    if grid[initial_pos_x_end][initial_pos_y_start]:
+        return True
+
+    if grid[initial_pos_x_end][initial_pos_y_end]:
+        return True
+
+    # Now the rest
+
+    # UP
+    for x in range(initial_pos_x_start + 1, initial_pos_x_end):
+        if grid[x][initial_pos_y_start]:
+            return True
+
+    # DOWN
+    for x in range(initial_pos_x_start + 1, initial_pos_x_end):
+        if grid[x][initial_pos_y_end]:
+            return True
+
+    # LEFT
+    for y in range(initial_pos_y_start + 1, initial_pos_y_end):
+        if grid[initial_pos_x_start][y]:
+            return True
+
+    # RIGHT
+    for y in range(initial_pos_y_start + 1, initial_pos_y_end):
+        if grid[initial_pos_x_end][y]:
+            return True
+
+    return False
+
+
+def normalize(value: int, max_value: int) -> float:
+    return value / max_value
+
+
+def normalize_opposite(value: int, max_value: int) -> float:
+    return normalize(max_value - value, max_value)
+
+
 class ReflexAgent(Agent):
     """
     A reflex agent chooses an action at each choice point by examining
@@ -85,26 +168,33 @@ class ReflexAgent(Agent):
             ghostState.getPosition() for ghostState in ghostStates
         ]
 
-        enemiesDistance: List[float] = []
-        minEnemyDistance: float = 10_000_000
+        minEnemyDistance: float = max(foodGrid.width, foodGrid.height)
         for ghostPosX, ghostPosY in ghostPositions:
             enemyDistance = (playerPosX - ghostPosX) ** 2 + (
                 playerPosY - ghostPosY
             ) ** 2
-            enemiesDistance.append(enemyDistance)
 
             if enemyDistance < minEnemyDistance:
                 minEnemyDistance = enemyDistance
 
-        distanceToFood = 10_000_000
-        # Foods close have a 
+        minEnemyDistanceNormalized = normalize(
+            minEnemyDistance, max(foodGrid.width, foodGrid.height)
+        )
 
-        return minEnemyDistance - successorGameState.getNumFood() * 10
+        ateFood = (currentGameState.getNumFood() - successorGameState.getNumFood()) == 1
+        distanceToFood = 0
+        if not ateFood:
+            distanceToFood = ray_distance(
+                foodGrid, foodGrid.width, foodGrid.height, playerPos, 5
+            )
+        print("absolute food distance", distanceToFood)
+        distanceToFoodNormalized = normalize_opposite(
+            distanceToFood, 5
+        ) if distanceToFood is not None else 0
 
-        return -successorGameState.getNumFood()
-        return successorGameState.getScore()
+        print("food distance", distanceToFoodNormalized)
 
-        return enemiesDistance
+        return minEnemyDistanceNormalized + 5 * distanceToFoodNormalized
 
 
 def scoreEvaluationFunction(currentGameState: GameState):
