@@ -185,16 +185,16 @@ class ReflexAgent(Agent):
         distanceToFood = 0
         if not ateFood:
             distanceToFood = ray_distance(
-                foodGrid, foodGrid.width, foodGrid.height, playerPos, 5
+                foodGrid, foodGrid.width, foodGrid.height, playerPos, 15
             )
         print("absolute food distance", distanceToFood)
         distanceToFoodNormalized = normalize_opposite(
-            distanceToFood, 5
+            distanceToFood, 15
         ) if distanceToFood is not None else 0
 
         print("food distance", distanceToFoodNormalized)
 
-        return minEnemyDistanceNormalized + 5 * distanceToFoodNormalized
+        return minEnemyDistanceNormalized + 1 * distanceToFoodNormalized
 
 
 def scoreEvaluationFunction(currentGameState: GameState):
