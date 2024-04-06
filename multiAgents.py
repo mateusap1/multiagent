@@ -46,10 +46,6 @@ def ray_trigger(
     player_pos_x, player_pox_y = player_pos
 
     if breadth == 0:
-        # print("Yuhai!")
-        # print("grid", grid)
-        # print("postions", player_pos_x, player_pox_y, grid[player_pos_x][player_pox_y])
-        # print("Yuhai!")
         return grid[player_pos_x][player_pox_y]
 
     initial_pos_x_start = max(player_pos[0] - breadth, 0)
@@ -187,12 +183,9 @@ class ReflexAgent(Agent):
             distanceToFood = ray_distance(
                 foodGrid, foodGrid.width, foodGrid.height, playerPos, 15
             )
-        print("absolute food distance", distanceToFood)
         distanceToFoodNormalized = normalize_opposite(
             distanceToFood, 15
         ) if distanceToFood is not None else 0
-
-        print("food distance", distanceToFoodNormalized)
 
         return minEnemyDistanceNormalized + 1 * distanceToFoodNormalized
 
