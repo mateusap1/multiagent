@@ -436,37 +436,56 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
     Your expectimax agent (question 4)
     """
 
-    def expectAction(self, gameState: GameState, depth: int):
+    def getExpectValue(self, gameState: GameState, agentIndex: int, depth: int):
+        numAgents = gameState.getNumAgents()
+
         isTerminalState = (
             (depth > self.depth) or gameState.isLose() or gameState.isWin()
         )
-        if isTerminalState:
-            return (None, self.evaluationFunction(gameState))
-
-        possible_scores: List[float] = []
-        for agent_index in range(1, gameState.getNumAgents()):
-            for action in gameState.getLegalActions(agent_index):
-                successor = gameState.generateSuccessor(agent_index, action)
-                possible_score = self.evaluationFunction(successor)
-
-                possible_scores.append(possible_score)
-
-        return (None, statistics.mean(possible_scores))
-
-    def maxAction(self, gameState: GameState, depth: int):
-        isTerminalState = gameState.isLose() or gameState.isWin()
+        finalAgent = agentIndex == (numAgents - 1)
+        finalDepth = depth == self.depth
 
         if isTerminalState:
             return (None, self.evaluationFunction(gameState))
-        
+
+        if finalAgent:
+            if finalDepth:
+                values: List[float] = []
+                for action in gameState.getLegalActions(agentIndex):
+                    successor = gameState.generateSuccessor(agentIndex, action)
+                    values.append(self.evaluationFunction(successor))
+
+                return (None, statistics.mean(values))
+            else:
+                values: List[float] = []
+                for action in gameState.getLegalActions(agentIndex):
+                    successor = gameState.generateSuccessor(agentIndex, action)
+                    _, value = self.getMaxValue(successor, depth + 1)
+                    values.append(value)
+
+                return (None, statistics.mean(values))
+        else:
+            values: List[float] = []
+            for action in gameState.getLegalActions(agentIndex):
+                successor = gameState.generateSuccessor(agentIndex, action)
+                _, value = self.getExpectValue(successor, agentIndex + 1, depth)
+                values.append(value)
+
+            return (None, statistics.mean(values))
+
+    def getMaxValueExpect(self, gameState: GameState, depth: int):
+        if gameState.isLose():
+            return (None, self.evaluationFunction(gameState))
+        elif gameState.isWin():
+            return (None, self.evaluationFunction(gameState))
+
         maxValue = MINUS_INFINITE
         bestAction = None
         for action in gameState.getLegalActions(0):
             successor = gameState.generateSuccessor(0, action)
-            _, expectValue = self.expectAction(successor, depth)
-
-            if expectValue > maxValue:
-                maxValue = expectValue
+            _, value = self.getExpectValue(successor, 1, depth)
+            if value > maxValue:
+                maxValue = value
                 bestAction = action
 
         return (bestAction, maxValue)
@@ -479,7 +498,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
 
-        action, _ = self.maxAction(gameState, 1)
+        action, _ = self.getMaxValueExpect(gameState, 1)
         return action
 
 
