@@ -14,12 +14,15 @@
 
 from util import manhattanDistance
 from game import Directions
+
 import random, util
 
 from game import Agent, AgentState, Grid
 from pacman import GameState
 
 from typing import Tuple, List
+
+import statistics
 
 
 INFINITE = 1_000_000_000
@@ -433,6 +436,41 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
     Your expectimax agent (question 4)
     """
 
+    def expectAction(self, gameState: GameState, depth: int):
+        isTerminalState = (
+            (depth > self.depth) or gameState.isLose() or gameState.isWin()
+        )
+        if isTerminalState:
+            return (None, self.evaluationFunction(gameState))
+
+        possible_scores: List[float] = []
+        for agent_index in range(1, gameState.getNumAgents()):
+            for action in gameState.getLegalActions(agent_index):
+                successor = gameState.generateSuccessor(agent_index, action)
+                possible_score = self.evaluationFunction(successor)
+
+                possible_scores.append(possible_score)
+
+        return (None, statistics.mean(possible_scores))
+
+    def maxAction(self, gameState: GameState, depth: int):
+        isTerminalState = gameState.isLose() or gameState.isWin()
+
+        if isTerminalState:
+            return (None, self.evaluationFunction(gameState))
+        
+        maxValue = MINUS_INFINITE
+        bestAction = None
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            _, expectValue = self.expectAction(successor, depth)
+
+            if expectValue > maxValue:
+                maxValue = expectValue
+                bestAction = action
+
+        return (bestAction, maxValue)
+
     def getAction(self, gameState: GameState):
         """
         Returns the expectimax action using self.depth and self.evaluationFunction
@@ -440,8 +478,9 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         All ghosts should be modeled as choosing uniformly at random from their
         legal moves.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        action, _ = self.maxAction(gameState, 1)
+        return action
 
 
 def betterEvaluationFunction(currentGameState: GameState):
